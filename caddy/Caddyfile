@@ -53,13 +53,21 @@
         reverse_proxy jellyseerr:5055
     }
 
+    # Dashboard central (Homarr) en la raíz. También es el catch-all:
+    # toda ruta que no matchee una app va a Homarr (es una SPA de Next.js
+    # que redirige a /init o /login internamente).
+    @homarr path /
+    handle @homarr {
+        reverse_proxy homarr:7575
+    }
+
     # Health check
     handle /healthz {
         respond "ok"
     }
 
-    # Catch-all 404 con mensaje amigable
+    # Catch-all: Homarr se encarga de todo lo que no es una app.
     handle {
-        respond "Not found. Try /jellyfin, /sonarr, /radarr, /bazarr, /jellyseerr, /wizarr. qBittorrent esta en :8080. Prowlarr en :9696. FlareSolverr en :8191." 404
+        reverse_proxy homarr:7575
     }
 }

@@ -13,6 +13,8 @@ Stack completo en Docker para correr tu propio servidor de medios en casa: pelí
 - **qBittorrent** — cliente torrent
 - **Jellyseerr** — UI de pedidos (un Netflix para tus usuarios)
 - **Wizarr** — invitaciones de usuarios
+- **Homarr** — dashboard central en la raíz con acceso a todas las apps
+- **Portainer** — UI de administración de containers (expuesto en `:9000`, sin subpath)
 
 Mirá [`architecture.excalidraw`](architecture.excalidraw) para el diagrama completo de topología (abrilo en <https://excalidraw.com>).
 
@@ -80,6 +82,7 @@ La estructura interna de carpetas sigue la convención de [TRaSH Guides](https:/
 
    | App | URL |
    | --- | --- |
+   | **Homarr** | `http://tu-servidor` (dashboard en la raíz) |
    | Jellyfin | `http://tu-servidor/jellyfin` |
    | Sonarr | `http://tu-servidor/sonarr` |
    | Radarr | `http://tu-servidor/radarr` |
@@ -89,6 +92,7 @@ La estructura interna de carpetas sigue la convención de [TRaSH Guides](https:/
    | **qBittorrent** | **`http://tu-servidor:8080`** |
    | **Prowlarr** | **`http://tu-servidor:9696`** |
    | **FlareSolverr** | **`http://tu-servidor:8191`** |
+   | **Portainer** | **`http://tu-servidor:9000`** |
 
    La primera vez, cada app te pide crear una cuenta. Mirá [Configuración inicial](#configuración-inicial) más abajo.
 

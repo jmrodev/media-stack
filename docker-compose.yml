@@ -165,6 +165,37 @@ services:
     networks:
       - proxy
 
+  # === Dashboard central (Homarr) ===
+  # Página de inicio que agrupa todas las apps. Se sirve en la raíz via Caddy
+  # (no tiene subpath propio). Necesita SECRET_ENCRYPTION_KEY en .env
+  # (generada con `openssl rand -hex 32`).
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    environment:
+      - SECRET_ENCRYPTION_KEY=${HOMARR_SECRET_ENCRYPTION_KEY:?faltó HOMARR_SECRET_ENCRYPTION_KEY en .env}
+      - DB_DRIVER=better-sqlite3
+      - DB_URL=/appdata/db/db.sqlite
+    volumes:
+      - ${CONFIG_DIR:-./config}/homarr:/appdata
+    networks:
+      - proxy
+
+  # === Container management (Portainer CE) ===
+  # UI para administrar los containers. Se expone DIRECTO en :9000 del host.
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CONFIG_DIR:-./config}/portainer:/data
+    networks:
+      - proxy
+
   # === Request management ===
   jellyseerr:
     image: ghcr.io/seerr-team/seerr:latest
