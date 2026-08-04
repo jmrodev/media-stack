@@ -37,23 +37,23 @@ services:
     networks:
       - proxy
 
-  # === Indexer manager ===
-  # Jackett se expone DIRECTO en :9117 del host. Lo usan Sonarr/Radarr
-  # via http://jackett:9117 adentro de la red Docker (no requiere subpath).
-  jackett:
-    image: lscr.io/linuxserver/jackett:latest
-    container_name: jackett
+  # === Indexer manager (Prowlarr) ===
+  # Reemplaza a Jackett. Se expone DIRECTO en :9696 del host.
+  # Prowlarr sincroniza los indexers a Sonarr/Radarr como apps conectadas
+  # (Settings > Apps en Prowlarr). FlareSolverr se configura en Prowlarr
+  # (Settings > Indexer Proxies) con el tag "flaresolverr".
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
     restart: unless-stopped
     ports:
-      - "9117:9117"
+      - "9696:9696"
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Argentina/Mendoza
-      - AUTO_UPDATE=true
     volumes:
-      - ${CONFIG_DIR:-./config}/jackett:/config
-      - ${DATA_DIR:-./data}/downloads:/downloads
+      - ${CONFIG_DIR:-./config}/prowlarr:/config
     networks:
       - proxy
 
@@ -107,10 +107,13 @@ services:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     restart: unless-stopped
+    ports:
+      - "6767:6767"
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Argentina/Mendoza
+      - URL_BASE=/bazarr
     volumes:
       - ${CONFIG_DIR:-./config}/bazarr:/config
       # Bazarr solo necesita ver la biblioteca final.
@@ -120,7 +123,6 @@ services:
       - sonarr
     networks:
       - proxy
-
   # === Downloads ===
   # qBittorrent se expone DIRECTO en :8080 del host, sin pasar por Caddy.
   # No soporta subpath de forma estable (las URLs internas del HTML son relativas
@@ -141,6 +143,8 @@ services:
       # qBittorrent solo escribe en /data/torrents. Los *arr mueven los archivos
       # terminados a /data/media vía hardlink + delete del original.
       - ${DATA_DIR:-./data}/torrents:/data/torrents
+      - ${DATA_DIR:-./data}/torrents:/data/downloads
+      - ${DATA_DIR:-./data}/torrents:/downloads
     networks:
       - proxy
 
@@ -191,6 +195,25 @@ services:
       - ${CONFIG_DIR:-./config}/wizarr:/config
     networks:
       - proxy
+
+  # === DLNA (minidlna, host net para discovery SSDP en el TV) ===
+  minidlna:
+    image: vladgh/minidlna:latest
+    container_name: minidlna
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - MINIDLNA_FRIENDLY_NAME=MediaStack
+      - MINIDLNA_MEDIA_DIR_1=V,/data/media/movies
+      - MINIDLNA_MEDIA_DIR_2=V,/data/media/series
+      - MINIDLNA_MEDIA_DIR_3=A,/data/media/music
+      - MINIDLNA_INOTIFY=yes
+      - MINIDLNA_NOTIFY_INTERVAL=900
+      - MINIDLNA_LOG_LEVEL=warn
+      - MINIDLNA_ROOT_CONTAINER=B
+      - MINIDLNA_STRICT_DLNA=no
+    volumes:
+      - ${DATA_DIR:-./data}/media:/data/media:ro
 
 networks:
   proxy:

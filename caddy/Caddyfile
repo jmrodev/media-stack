@@ -60,6 +60,6 @@
 
     # Catch-all 404 con mensaje amigable
     handle {
-        respond "Not found. Try /jellyfin, /sonarr, /radarr, /bazarr, /jellyseerr, /wizarr. qBittorrent esta en :8080. Jackett en :9117. FlareSolverr en :8191." 404
+        respond "Not found. Try /jellyfin, /sonarr, /radarr, /bazarr, /jellyseerr, /wizarr. qBittorrent esta en :8080. Prowlarr en :9696. FlareSolverr en :8191." 404
     }
 }
