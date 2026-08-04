@@ -87,8 +87,8 @@ La estructura interna de carpetas sigue la convención de [TRaSH Guides](https:/
    | Sonarr | `http://tu-servidor/sonarr` |
    | Radarr | `http://tu-servidor/radarr` |
    | Bazarr | `http://tu-servidor/bazarr` |
-   | Jellyseerr | `http://tu-servidor/jellyseerr` |
    | Wizarr | `http://tu-servidor/wizarr` |
+   | **Jellyseerr** | **`http://tu-servidor:5055`** |
    | **qBittorrent** | **`http://tu-servidor:8080`** |
    | **Prowlarr** | **`http://tu-servidor:9696`** |
    | **FlareSolverr** | **`http://tu-servidor:8191`** |

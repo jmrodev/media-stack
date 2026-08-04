@@ -42,16 +42,8 @@
     # estable porque sus URLs internas son relativas y se rompen cuando
     # Caddy strippea el prefijo.
 
-    # Jellyseerr: redirect interno va a /setup, no respeta subpath.
-    @jellyseerr path /jellyseerr*
-    handle_path /jellyseerr* {
-        reverse_proxy jellyseerr:5055
-    }
-    # Catch-all para assets/redirects internos de Jellyseerr.
-    @jellyseerr-assets path /api/* /_next/* /logo* /favicon* /apple-* /site.webmanifest /setup* /login* /css/* /js/* /images/*
-    handle @jellyseerr-assets {
-        reverse_proxy jellyseerr:5055
-    }
+    # Jellyseerr (Seerr) NO va por aca: no soporta base URL y se expone
+    # directo en :5055 del host. Ver docker-compose.yml.
 
     # Dashboard central (Homarr) en la raíz. También es el catch-all:
     # toda ruta que no matchee una app va a Homarr (es una SPA de Next.js

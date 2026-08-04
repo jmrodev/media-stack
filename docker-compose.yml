@@ -197,11 +197,15 @@ services:
       - proxy
 
   # === Request management ===
+  # Seerr/Jellyseerr no soporta base URL: se expone DIRECTO en :5055 del host
+  # (igual que qBittorrent/Prowlarr). Ver docs de Seerr (Reverse Proxy).
   jellyseerr:
     image: ghcr.io/seerr-team/seerr:latest
     init: true
     container_name: jellyseerr
     restart: unless-stopped
+    ports:
+      - "5055:5055"
     environment:
       - TZ=America/Argentina/Mendoza
       - LOG_LEVEL=info
