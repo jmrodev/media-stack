@@ -220,7 +220,8 @@ media-stack/
 │   └── configure-base-urls.sh    # setea los subpaths en cada app post-boot
 ├── docs/
 │   ├── DATA_LAYOUT.md            # explica por qué la estructura sigue TRaSH Guides
-│   └── INDEXERS.md               # setup detallado de Prowlarr, FlareSolverr e indexers
+│   ├── INDEXERS.md               # setup detallado de Prowlarr, FlareSolverr e indexers
+│   └── LANG_ESPANOL_LATINO.md    # Custom Formats y perfiles para audio/subs en español latino
 ├── architecture.excalidraw       # diagrama top-down del stack
 ├── docker-compose.yml
 ├── .env.example
