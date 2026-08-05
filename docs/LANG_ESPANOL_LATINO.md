@@ -4,6 +4,15 @@ Guía de cómo se configuró el stack para que Sonarr/Radarr prefieran contenido
 **audio en español latino**, no bajen remuxes gigantes sin el idioma, y Bazarr agregue
 subtítulos en español latino cuando el audio es inglés.
 
+> **Contexto para IA u operador**: el stack completo (Jellyfin + Sonarr + Radarr +
+> Prowlarr + Bazarr + qBittorrent + Jellyseerr + Homarr + Caddy + FlareSolverr) corre
+> con Docker Compose en el servidor `192.168.1.34`, en la carpeta `~/media-stack`.
+> Acceso: `ssh jmro@192.168.1.34`. Operar: `cd ~/media-stack && docker compose ps`,
+> `docker compose logs -f sonarr`, `docker compose restart sonarr`, `docker compose up -d`.
+> Las URLs: `/sonarr`, `/radarr`, `/bazarr`, `/jellyfin` (proxy Caddy en el puerto 80);
+> Prowlarr `:9696`, qBittorrent `:8080`, Jellyseerr `:5055`, Portainer `:9000`.
+> Ver `README.md`, `docs/INDEXERS.md` y `docs/DATA_LAYOUT.md` para el resto del stack.
+
 ## Por qué pasaba el problema
 
 El comportamiento original era el típico de los *arr sin configurar:
@@ -287,3 +296,98 @@ ssh jmro@192.168.1.34 'grep ApiKey ~/media-stack/config/sonarr/config.xml'
   (directo); en Sonarr `WEBDL-1080p` vive dentro del grupo `WEB 1080p` = `1002`
   (si se quiere apuntar al ítem suelto, es el id `3`). Verificá con
   `GET /api/v3/qualityprofile/{id}` qué ids acepta el `cutoff` del perfil.
+
+## Operación completa para IA u operador
+
+### Mapa de servicios y puertos
+
+| Servicio | URL interna | URL pública (proxy Caddy) |
+| --- | --- | --- |
+| Caddy | — | `http://192.168.1.34` (raíz, dashboard Homarr) |
+| Homarr | — | `http://192.168.1.34/` |
+| Jellyfin | `http://jellyfin:8096` | `http://192.168.1.34/jellyfin` |
+| Sonarr | `http://sonarr:8989` | `http://192.168.1.34/sonarr` |
+| Radarr | `http://radarr:7878` | `http://192.168.1.34/radarr` |
+| Bazarr | `http://bazarr:6767` | `http://192.168.1.34/bazarr` |
+| Prowlarr | `http://prowlarr:9696` | `http://192.168.1.34:9696` |
+| qBittorrent | `http://qbittorrent:8080` | `http://192.168.1.34:8080` |
+| FlareSolverr | `http://flaresolverr:8191` | `http://192.168.1.34:8191` |
+| Jellyseerr | `http://jellyseerr:5055` | `http://192.168.1.34:5055` |
+| Portainer | `http://portainer:9000` | `http://192.168.1.34:9000` |
+
+### Comandos operativos (en el server, desde `~/media-stack`)
+
+```bash
+ssh jmro@192.168.1.34
+cd ~/media-stack
+
+docker compose ps                 # estado de todos los servicios
+docker compose logs -f sonarr     # logs en vivo de una app
+docker compose logs --tail 100 radarr
+docker compose restart sonarr     # reiniciar una app
+docker compose up -d              # levantar todo (idempotente)
+docker compose pull && docker compose up -d   # actualizar imágenes
+docker compose down               # frenar (conserva datos)
+```
+
+### Estructura de datos
+
+```
+data/
+├── torrents/                     # staging (escribe qBittorrent)
+│   ├── movies/  series/  music/
+└── media/                        # biblioteca final (lee Jellyfin/Bazarr)
+    ├── movies/  series/  music/
+```
+
+- qBittorrent **Default Save Path** = `/data/torrents` (los *arr crean subcarpetas).
+- Sonarr Root Folder = `/data/series`; Radarr = `/data/movies`.
+- Jellyfin bibliotecas = `/data/media/movies`, `/data/media/series`, `/data/media/music`.
+- No romper la estructura o se pierden los hardlinks/moves atómicos (TRaSH).
+
+### Flujo de trabajo recomendado para una IA
+
+1. **Antes de tocar nada**: leer `README.md`, `docs/DATA_LAYOUT.md`,
+   `docs/INDEXERS.md` y esta guía.
+2. **Probar acceso a la API**: `curl -s -H "X-Api-Key: <KEY>" .../api/v3/system/status`
+   Si da 401, releer la key por SSH (sección "API keys").
+3. **Leer el estado antes de modificar**: siempre `GET` el recurso completo
+   (perfil, custom format, movie) antes de un `PUT`. Los *arr exigen el JSON
+   completo, no parcial.
+4. **Modificar con cuidado**: los custom formats solo afectan selección de releases;
+   los perfiles afectan qué se descarga. Verificá con un `GET` después de cada cambio.
+5. **Verificar el efecto**: consultar `GET /api/v3/movie` (perfil correcto),
+   `GET /api/v3/customformat`, y `GET /api/v3/history` para ver qué se grabó.
+6. **No tocar la DB de Bazarr** salvo que sea estrictamente necesario (perfil de
+   idiomas); después `docker restart bazarr`.
+
+### Qué significa cada ajuste y cuándo usarlo
+
+| Ajuste | Dónde | Efecto |
+| --- | --- | --- |
+| `Español Latino` score 1000 | Custom Format en Sonarr+Radarr | Pone arriba de todo los releases con `Latino`/`LAT` |
+| `Español Castellano` score 500 | Custom Format en Sonarr+Radarr | Pone arriba los releases con `Español`/`Castellano`/`Spanish` |
+| `upgradeAllowed: true` | Perfil de calidad | Reemplaza un release existente si aparece uno con mejor puntaje |
+| `minFormatScore: 0` | Perfil de calidad | No bloquea: si no hay latino, baja en inglés (no se queda sin descargar) |
+| cutoff = 7 (Radarr) / 1002 (Sonarr) | Perfil de calidad | No busca versiones por encima de 1080p WEB-DL |
+| `single_language: true` | Bazarr | Baja subs solo del primer idioma del perfil (latino) |
+| `serie/movie_default_enabled: true` | Bazarr | Asigna el perfil de idiomas a series/películas automáticamente |
+
+### Checklist ante un problema
+
+1. ¿El título usa el perfil correcto? → `GET /api/v3/movie/{id}` → `qualityProfileId`.
+2. ¿El release existe con latino? → `GET /api/v3/release?movieId={id}` (tarda ~12 s).
+3. ¿El custom format está en el perfil con su score? → `GET /api/v3/qualityprofile/{id}`.
+4. ¿Bazarr ve la serie/película? → `GET /api/system/settings` y la DB de Bazarr.
+5. ¿El índice tiene el contenido? → Prowlarr `GET /api/v1/indexer`.
+6. ¿Están los indexers sincronizados a la app? → `GET /api/v3/indexer` en la app.
+
+### Datos de acceso actuales (relevar por SSH, no están en git)
+
+| Recurso | Comando para obtenerlo |
+| --- | --- |
+| SSH | `ssh jmro@192.168.1.34` (clave `id_ed25519` de la notebook) |
+| Sonarr API key | `grep ApiKey ~/media-stack/config/sonarr/config.xml` |
+| Radarr API key | `grep ApiKey ~/media-stack/config/radarr/config.xml` |
+| Bazarr API key | `grep -A1 '^  apikey' ~/media-stack/config/bazarr/config/config.yaml` |
+| Prowlarr API key | `grep ApiKey ~/media-stack/config/prowlarr/config.xml` |
