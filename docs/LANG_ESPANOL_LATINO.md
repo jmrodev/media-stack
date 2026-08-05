@@ -193,6 +193,45 @@ definiciones ya vienen incluidas en Prowlarr (aparecen al buscar "latino/hispano
 > Los indexers públicos se sincronizan igual: si querés separar más, podés usar
 > **tags** en Prowlarr para filtrar qué indexers llegan a qué app.
 
+## Formatos de request que acepta cada API
+
+Cada app tiene su propio contrato de API. Esto importa porque **no todas aceptan JSON**:
+
+| App | Base de la API | Header auth | Formato de request | Content-Type |
+| --- | --- | --- | --- | --- |
+| **Sonarr** | `/sonarr/api/v3` | `X-Api-Key` | **JSON** | `application/json` |
+| **Radarr** | `/radarr/api/v3` | `X-Api-Key` | **JSON** | `application/json` |
+| **Prowlarr** | `:9696/api/v1` | `X-Api-Key` | **JSON** | `application/json` |
+| **Bazarr** | `/bazarr/api` | `X-API-KEY` | **form-data / urlencoded** (lectura y algunos GET devuelven JSON) | `application/x-www-form-urlencoded` |
+
+Reglas por app:
+
+- **Sonarr / Radarr (JSON):** todos los bodies se mandan como JSON. GET no lleva body
+  (los params van en la query string: `?movieId=2`). POST/PUT llevan el objeto completo
+  que devolvió el GET (se edita y se devuelve entero) — mandar el JSON a medias da
+  `400 Validation failed`.
+- **Bazarr (form-data):** `POST /api/system/settings` usa campos tipo
+  `settings-general-<clave>` como form-urlencoded. **No** acepta JSON en ese endpoint
+  (devuelve 405/204 sin persistir). Para el perfil de idioma se toca la DB SQLite
+  directamente (`table_languages_profiles`). Los GET de lectura sí responden JSON.
+- **Prowlarr (JSON):** ej. `POST /api/v1/search` con body
+  `{"query":"...","type":"search","indexerIds":[1,2,3],"categories":[{"id":2000,"name":"Movies"}]}`.
+  Nota: las `categories` se mandan como objetos `{id,name}`, no como números sueltos
+  (un array de ints da `400`).
+
+### Endpoints útiles
+
+| App | Endpoint | Uso |
+| --- | --- | --- |
+| Sonarr/Radarr | `GET /api/v3/qualityprofile` | listar perfiles y ver `formatItems`/`cutoff` |
+| Sonarr/Radarr | `PUT /api/v3/qualityprofile/{id}` | editar un perfil (JSON completo) |
+| Sonarr/Radarr | `GET/POST /api/v3/customformat` | listar/crear custom formats |
+| Radarr | `PUT /api/v3/movie/editor` | migrar varias pelis: `{"movieIds":[...],"qualityProfileId":N}` |
+| Radarr | `GET /api/v3/release?movieId=N` | búsqueda interactiva de releases (tarda ~12 s) |
+| Prowlarr | `GET /api/v1/indexer` | listar indexers y sus categorías/tags |
+| Bazarr | `GET /api/system/settings` | leer settings (JSON) |
+| Bazarr | `POST /api/system/settings` | guardar settings (**form-data**) |
+
 ## API keys: dónde están y cómo actualizarlas
 
 Las claves se leen de los archivos de config **dentro del servidor** (por SSH),
