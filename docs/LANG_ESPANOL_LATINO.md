@@ -147,6 +147,52 @@ WHERE profileId=1;
 
 > Después de tocar la DB hay que reiniciar el container (`docker restart bazarr`).
 
+## Indexers: separación series vs películas
+
+Prowlarr es la central de indexers y sincroniza automáticamente a las apps por
+**categoría**, no de a un indexer entero:
+
+- **Sonarr** (series) recibe solo las categorías `TV`.
+- **Radarr** (películas) recibe solo las categorías `Movies`.
+- Un indexer con ambas categorías (ej. 1337x, The Pirate Bay) aparece en las dos
+  apps; uno solo `Movies` (ej. YTS) aparece únicamente en Radarr.
+
+Estado actual del stack:
+
+| App | Indexers sincronizados |
+| --- | --- |
+| Sonarr | 1337x, The Pirate Bay |
+| Radarr | 1337x, The Pirate Bay, YTS |
+
+### Por qué no aparecen releases latinos
+
+Los trackers públicos (1337x, TPB, YTS) casi no publican contenido con audio
+**español latino**: son en inglés/ita/hindi/french. En una búsqueda real, 0 de 179
+releases para *The Batman* matcheó el custom format Latino.
+
+El contenido latino se publica mayormente en **trackers privados latinos**. Los
+definiciones ya vienen incluidas en Prowlarr (aparecen al buscar "latino/hispano"):
+
+- **Privados (requieren registro/invitación)**: `BTArg` (es-AR), `Lat-Team` (es-MX),
+  `ChileBT` (es-CL), `F1Carreras` (es-MX), `HD-Olimpo`, `Torrenteros`,
+  `ParabellumHD`, `NOBS` (es-ES), etc.
+- **Públicos/semiprivados**: `GamesTorrents` (es-ES, solo juegos), `PuntoTorrent`
+  (es-ES), `Union Fansub` (semi-privado, anime).
+
+### Cómo agregar un tracker latino
+
+1. En **Prowlarr** (`http://192.168.1.34:9696`): `Settings → Indexers → Add Indexer`,
+   elegí el tracker (ej. `BTArg`) y cargá credenciales (passkey/cookies).
+2. Prowlarr lo sincroniza solo a las apps cuyas categorías soporte el tracker
+   (`Movies`, `TV` o ambas). No hace falta tocarlo en Sonarr/Radarr.
+3. Los Custom Formats (Latino/Castellano) ya están en ambas apps, así que el score
+   se aplica apenas aparezca un release latino.
+4. Si el tracker usa Cloudflare, asigná el tag `flaresolverr` (igual que los indexers
+   actuales, todos lo tienen: tags `[1]`).
+
+> Los indexers públicos se sincronizan igual: si querés separar más, podés usar
+> **tags** en Prowlarr para filtrar qué indexers llegan a qué app.
+
 ## API keys: dónde están y cómo actualizarlas
 
 Las claves se leen de los archivos de config **dentro del servidor** (por SSH),
