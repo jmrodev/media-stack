@@ -243,3 +243,10 @@ Pull requests bienvenidos. Mantené los cambios enfocados y actualizá este READ
 - [Jellyfin](https://jellyfin.org) — por el servidor de medios
 - [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) — por la UI de pedidos
 - [Wizarr](https://github.com/Wizarrrr/wizarr) — por el sistema de invitaciones
+
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia **MIT License**.
+
+Copyright (c) 2026 **Juan Marcelo Rodríguez** ([@jmrodev](https://github.com/jmrodev)).
